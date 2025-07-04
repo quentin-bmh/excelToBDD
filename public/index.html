@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Excel → SQL</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>Convertisseur Excel → SQL</h1>
+
+        <form id="upload-form">
+        <input type="file" id="excel-file" accept=".xlsx, .xls" required />
+        <button type="submit">Charger le fichier</button>
+        </form>
+        <div id="controls">
+            <button id="toggle-theme">🌓 Mode sombre</button>
+            <button id="reset-app">🔁 Réinitialiser</button>
+        </div>
+        <div id="sheet-controls" style="margin-bottom: 1em; display:none;">
+            <label for="sheet-select">Sélectionner la feuille : </label>
+            <select id="sheet-select"></select>
+
+            <label for="import-mode" style="margin-left: 2em;">Mode import :</label>
+            <select id="import-mode">
+                <option value="single">Une table par feuille (sélectionnée)</option>
+                <option value="merge">Fusionner toutes les feuilles</option>
+            </select>
+        </div>
+
+        <div id="error-message" style="color: red; margin: 1em 0;"></div>
+
+        <div id="output">
+            <h2>Aperçu des données</h2>
+            <div id="preview-container"
+                style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 1em; border-radius: 6px; padding: 0.5em; background: #fafafa;">
+            </div>
+
+            <h2>Nom de la table</h2>
+            <input type="text" id="table-name" placeholder="ma_table" value="ma_table"
+                    style="padding: 0.5em; width: 100%; max-width: 400px; margin-bottom: 1em; border-radius: 4px; border: 1px solid #ccc;" />
+
+            <h2>Types de colonnes personnalisables</h2>
+            <form id="type-form"
+                    style="display: flex; flex-direction: row; gap: 0.5em; margin-bottom: 1em;">
+            </form>
+
+            <button id="generate-sql-btn"
+                    style="padding: 0.6em 1.2em; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; display: none;">
+                Générer le SQL
+            </button>
+
+            <div id="sql-output" style="display: none; margin-top: 2em;">
+                <div class="sql-bubble">
+                    <div class="sql-header">
+                        <h2>Requête CREATE TABLE</h2>
+                    </div>
+                    <div class="sql-container">
+                        <button class="copy-btn" data-target="create-sql">📋 Copier</button>
+                        <pre id="create-sql" class="sql-code"></pre>
+                    </div>
+                </div>
+
+                <div class="sql-bubble">
+                    <div class="sql-header">
+                        <h2>Requêtes INSERT INTO</h2>
+                    </div>
+                    <div class="sql-container">
+                        <button class="copy-btn" data-target="insert-sql">📋 Copier</button>
+                        <pre id="insert-sql" class="sql-code"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
