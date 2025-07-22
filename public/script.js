@@ -95,6 +95,11 @@ function removeEmptyColumns(data) {
     return cleanedRow;
   });
 }
+function excelDateToISO(serial) {
+  const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // 1899-12-30
+  const date = new Date(excelEpoch.getTime() + serial * 86400 * 1000);
+  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+}
 
 function generateSQL(data) {
   const createEl = document.getElementById('create-sql');
@@ -107,22 +112,35 @@ function generateSQL(data) {
     colTypes[col] = select ? select.value : 'VARCHAR(255)';
   });
 
-  const tableNameInput = document.getElementById('table-name');
-  const tableName = tableNameInput?.value?.trim() || 'ma_table';
+  const tableName = (document.getElementById('table-name')?.value || 'ma_table').trim();
 
+  // Génération du CREATE
   const createSQL =
     `CREATE TABLE "${tableName}" (\n` +
     columns.map(col => `  "${col}" ${colTypes[col]}`).join(',\n') +
     `\n);`;
 
+  // Génération des INSERT
   const insertSQL = data.map(row => {
-    const values = columns.map(col => escapeSQL(row[col]));
+    const values = columns.map(col => {
+      let value = row[col];
+      
+      // Conversion des Excel dates (ex: 45809 → '2025-07-20') uniquement si type = DATE
+      if (colTypes[col] === 'DATE' && typeof value === 'number') {
+        value = excelDateToISO(value);
+      }
+
+      return escapeSQL(value);
+    });
+
     return `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${values.join(', ')});`;
   }).join('\n');
 
   createEl.textContent = createSQL;
   insertEl.textContent = insertSQL;
 }
+
+
 
 function generateColumnTypeForm(data) {
   const typeForm = document.getElementById('type-form');
