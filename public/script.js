@@ -120,25 +120,24 @@ function generateSQL(data) {
     columns.map(col => `  "${col}" ${colTypes[col]}`).join(',\n') +
     `\n);`;
 
-  // Génération des INSERT
-  const insertSQL = data.map(row => {
+  // Génération des INSERT (regroupé en une seule requête)
+  const valuesSQL = data.map(row => {
     const values = columns.map(col => {
       let value = row[col];
-      
-      // Conversion des Excel dates (ex: 45809 → '2025-07-20') uniquement si type = DATE
       if (colTypes[col] === 'DATE' && typeof value === 'number') {
         value = excelDateToISO(value);
       }
-
       return escapeSQL(value);
     });
+    return `  (${values.join(', ')})`;
+  }).join(',\n');
 
-    return `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${values.join(', ')});`;
-  }).join('\n');
+  const insertSQL = `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')})\nVALUES\n${valuesSQL};`;
 
   createEl.textContent = createSQL;
   insertEl.textContent = insertSQL;
 }
+
 
 
 
