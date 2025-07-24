@@ -60,19 +60,28 @@ function showPreview(data) {
 }
 
 function inferType(values) {
-  let isNumber = true;
+  let isInt = true;
+  let isFloat = true;
   let isDate = true;
+  let isBoolean = true;
 
-  for (const value of values) {
-    if (value === '') continue;
-    if (isNumber && isNaN(Number(value))) isNumber = false;
-    if (isDate && isNaN(Date.parse(value))) isDate = false;
+  for (const val of values) {
+    if (val === '' || val === null || val === undefined) continue;
+    const str = String(val).toLowerCase().trim();
+
+    if (isInt && !/^[-+]?\d+$/.test(str)) isInt = false;
+    if (isFloat && !/^[-+]?\d+(\.\d+)?$/.test(str)) isFloat = false;
+    if (isDate && isNaN(Date.parse(str))) isDate = false;
+    if (isBoolean && !['true', 'false', '0', '1', 'oui', 'non'].includes(str)) isBoolean = false;
   }
 
-  if (isNumber) return 'INT';
+  if (isInt) return 'INT';
+  if (isFloat) return 'FLOAT';
+  if (isBoolean) return 'BOOLEAN';
   if (isDate) return 'DATE';
   return 'VARCHAR(255)';
 }
+
 
 function escapeSQL(value) {
   if (value === null || value === undefined) return 'NULL';
@@ -116,8 +125,8 @@ function generateSQL(data) {
 
   // Génération du CREATE
   const createSQL =
-    `CREATE TABLE "${tableName}" (\n` +
-    columns.map(col => `  "${col}" ${colTypes[col]}`).join(',\n') +
+    `CREATE TABLE ${tableName} (\n` +
+    columns.map(col => `  ${col} ${colTypes[col]}`).join(',\n') +
     `\n);`;
 
   // Génération des INSERT (regroupé en une seule requête)
@@ -132,7 +141,7 @@ function generateSQL(data) {
     return `  (${values.join(', ')})`;
   }).join(',\n');
 
-  const insertSQL = `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')})\nVALUES\n${valuesSQL};`;
+  const insertSQL = `INSERT INTO ${tableName} (${columns.map(c => `${c}`).join(', ')})\nVALUES\n${valuesSQL};`;
 
   createEl.textContent = createSQL;
   insertEl.textContent = insertSQL;
