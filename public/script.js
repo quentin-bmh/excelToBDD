@@ -82,7 +82,6 @@ function inferType(values) {
   return 'VARCHAR(255)';
 }
 
-
 function escapeSQL(value) {
   if (value === null || value === undefined) return 'NULL';
   return `'${String(value).replace(/'/g, "''")}'`;
@@ -104,10 +103,11 @@ function removeEmptyColumns(data) {
     return cleanedRow;
   });
 }
+
 function excelDateToISO(serial) {
-  const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // 1899-12-30
+  const excelEpoch = new Date(Date.UTC(1899, 11, 30));
   const date = new Date(excelEpoch.getTime() + serial * 86400 * 1000);
-  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  return date.toISOString().split('T')[0];
 }
 
 function generateSQL(data) {
@@ -118,37 +118,42 @@ function generateSQL(data) {
   const colTypes = {};
   columns.forEach(col => {
     const select = document.querySelector(`select[name="${col}"]`);
-    colTypes[col] = select ? select.value : 'VARCHAR(255)';
+    let selectedType = select ? select.value : 'VARCHAR(255)';
+    colTypes[col] = selectedType;
   });
 
   const tableName = (document.getElementById('table-name')?.value || 'ma_table').trim();
 
-  // Génération du CREATE
+  // CREATE TABLE
   const createSQL =
     `CREATE TABLE ${tableName} (\n` +
     columns.map(col => `  ${col} ${colTypes[col]}`).join(',\n') +
     `\n);`;
 
-  // Génération des INSERT (regroupé en une seule requête)
+  // INSERT
   const valuesSQL = data.map(row => {
     const values = columns.map(col => {
       let value = row[col];
-      if (colTypes[col] === 'DATE' && typeof value === 'number') {
+      const type = colTypes[col];
+
+      if (type === 'DATE' && typeof value === 'number') {
         value = excelDateToISO(value);
       }
+
+      if (type === 'DECIMAL(5,2)' && typeof value === 'string' && value.endsWith('%')) {
+        value = parseFloat(value.replace('%', ''));
+      }
+
       return escapeSQL(value);
     });
     return `  (${values.join(', ')})`;
   }).join(',\n');
 
-  const insertSQL = `INSERT INTO ${tableName} (${columns.map(c => `${c}`).join(', ')})\nVALUES\n${valuesSQL};`;
+  const insertSQL = `INSERT INTO ${tableName} (${columns.join(', ')})\nVALUES\n${valuesSQL};`;
 
   createEl.textContent = createSQL;
   insertEl.textContent = insertSQL;
 }
-
-
-
 
 function generateColumnTypeForm(data) {
   const typeForm = document.getElementById('type-form');
@@ -172,7 +177,19 @@ function generateColumnTypeForm(data) {
     const select = document.createElement('select');
     select.name = col;
 
-    const options = ['INT', 'FLOAT', 'VARCHAR(255)', 'TEXT', 'DATE', 'BOOLEAN'];
+    const options = [
+      'INT',
+      'FLOAT',
+      'DECIMAL(5,2)', 
+      'VARCHAR(255)', 
+      'TEXT',         
+      'BOOLEAN',
+      'DATE',
+      'TIMESTAMP',
+      'UUID'
+    ];
+
+
     options.forEach(type => {
       const opt = document.createElement('option');
       opt.value = type;
@@ -213,15 +230,12 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('generate-sql-btn')?.addEventListener('click', () => {
+  document.getElementById('generate-sql-btn')?.addEventListener('click', () => {
     if (!currentData) {
-        showError("❌ Aucune donnée chargée pour générer le SQL.");
-        return;
+      showError("❌ Aucune donnée chargée pour générer le SQL.");
+      return;
     }
     generateSQL(currentData);
     document.getElementById('sql-output').style.display = 'block';
-    });
-
+  });
 });
-
-
